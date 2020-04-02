@@ -9,11 +9,11 @@ module.exports = {
   output: {
     library: 'Core',
     libraryTarget: 'umd',
-    filename: '[name].js',
-    path: path.resolve(__dirname, 'build/')
+    filename: 'dist.js',
+    path: path.resolve(__dirname, './')
   },
   module: {
-    rules: [
+    rules: [ 
       {
         test: /\.js$/,
         exclude: /(node_modules)/,

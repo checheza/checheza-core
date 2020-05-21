@@ -1,22 +1,25 @@
 import Core from './core';
 
 export default class CoreBackend {
+
+    constructor() {
+        this.initialize();
+    }
+
     initialize() { 
         this.activeRequests = [];
 
         if(__cfg.backend.use) {
             this.address = __cfg.backend.address;
             this.auth = btoa(__cfg.backend.username+":"+__cfg.backend.password);
-            Core.log("Instantiated core.backend");
+            console.log("Instantiated core.backend");
         } else {
-            Core.log("Skipping backend module. Not configured");
+            console.log("Skipping backend module. Not configured");
         }
     }
 
     request(method, resource, data) {
         return new Promise((resolve, reject) => { 
-            let requestIndex = this.activeRequests.length;
-
             fetch(this.address + resource, {
                 method: method,
                 mode: 'cors',
@@ -34,7 +37,7 @@ export default class CoreBackend {
                     data: []
                 }
 
-                this.activeRequests[requestIndex] = infoObject;
+                let requestIndex = this.activeRequests.push(infoObject);
 
                 const reader = response.body.getReader();      
                 infoObject.contentLength = response.headers.get('Content-Length');
@@ -61,7 +64,6 @@ export default class CoreBackend {
                       
                       infoObject.receivedLength += value.length;
                       chunks.push(value);
-
                       Core.backend.activeRequests[requestIndex] = infoObject;
 
                       return pump();
@@ -82,13 +84,9 @@ export default class CoreBackend {
         url = url.replace('https://data.checheza.com','');
         return this.GET(url, true)
         .then(file => {
-            return Core.filesystem.writeFile("/test.zip", file);
-        }).then(zip => {
-            return Core.filesystem.unzipFile("/test.zip");
+            return Core.filesystem.unzipFile(file);
         }).then(() => {
-            return Core.filesystem.removeFile("/test.zip");
-        }).then(() => {
-            return Core.refreshAddons();
+            return Core.refreshModules();
         })
     }
 

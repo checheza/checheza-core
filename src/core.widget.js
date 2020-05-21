@@ -1,8 +1,7 @@
 import Module from './core.module.js';
-import core from './core.js';
+import Core from './core.js';
 
 export class Widget extends Module {
-
 	constructor(manifest) {
 		super(manifest);
 	}
@@ -12,30 +11,61 @@ export class Widget extends Module {
 	 * returns a promise to be resolved
 	 */
 	getProgress() {
-		return core.database.getProgress(this.identifier)
-			.then(result => {
-				return result;
-			})
+		return Core.database.getProgress(this.identifier).then((result) => {
+			return result;
+		});
 	}
 
 	/**
 	 * method to save the users progress in the current widget
 	 * returns a promise to be resolved
-	 * @param {*} progress 
+	 * @param {*} progress
 	 */
 	saveProgress(progress) {
-		return core.database.saveProgress(this.identifier, progress)
+		return Core.database
+			.saveProgress(this.identifier, progress)
 			.then(() => {
 				return true;
-			})
+			});
 	}
 
-	start() { 
-		this.render(this.mainView);
+	render(view) {
+		return new Promise((resolve, reject) => {
+			let timeout = setTimeout(() => {
+				reject(false);
+			}, 5000);
+
+			document
+				.getElementById('core_app_container')
+				.addEventListener('DOMSubtreeModified', () => {
+					clearTimeout(timeout);
+					resolve(true);
+				});
+
+			document.getElementById('core_app_container').innerHTML = view;
+		});
 	}
 
-	getViewFromName(viewName) { 
-		return this.views.find(view => {
+	openDomain(domainName, payload) {
+		Core.utils.makeUnzoomable();
+		Core.utils.clearBackgroundLayer();
+		Core.audio.unloadAll();
+		Core.domainHistory.push({ name: domainName, payload: payload });
+
+		this.render(this.domains[domainName].render()).then(() => {
+			this.domains[domainName].start(payload);
+		});
+	}
+
+	start() {
+		Core.audio.unloadAll();
+		Core.domainHistory = [];
+		Core.setActiveWidget(this);
+		this.openDomain('main');
+	}
+
+	getViewFromName(viewName) {
+		return this.views.find((view) => {
 			return view.name === viewName;
 		});
 	}

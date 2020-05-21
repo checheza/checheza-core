@@ -1,23 +1,28 @@
 import CoreUtils from './core.utils.js';
 import CoreFilesystem from './core.fs.js';
-import CoreBackend from './core.utils.js';
+import CoreBackend from './core.backend.js';
 import CoreDatabase from './core.database.js';
 import CoreAnalytics from './core.analytics.js';
+import CoreAudio from './core.audio.js';
+import styles from '../assets/core.css';
 
-class Core {	
+class Core {
 	/**
-     * @ignore
-     * This method is not supposed to be used by anything other than starting up the application.
-     */
+	 * @ignore
+	 * This method is not supposed to be used by anything other than starting up the application.
+	 */
 	constructor() {
-
 		this.modules = [];
+		this.domainHistory = [];
 
 		// This is the currently active widget module.
 		this.activeWidget = null;
 
 		// Initialize the core utilities
 		this.utils = new CoreUtils();
+
+		// Initialize the core audio utility
+		this.audio = new CoreAudio();
 
 		// Initialize filesystem access
 		this.filesystem = new CoreFilesystem();
@@ -27,9 +32,14 @@ class Core {
 
 		// Initialize core analytics
 		this.analytics = new CoreAnalytics();
-		
+
 		// Initialize database
-		this.database = new CoreDatabase("1", "chechezaCoreDb", "Database for Checheza core", 2*1024*1024);
+		this.database = new CoreDatabase(
+			'1',
+			'chechezaCoreDb',
+			'Database for Checheza core',
+			2 * 1024 * 1024
+		);
 
 		this.countdown = 0;
 	}
@@ -39,21 +49,24 @@ class Core {
 	}
 
 	initializeResizeListener() {
-		$(window).on("resize", () => {
-			$("#core_resize_overlay").show(100);
+		window.addEventListener('resize', () => {
+			document.getElementById('core_resize_overlay').style.display =
+				'block';
 			this.countdown += 1;
-			
-			setTimeout(()=>{
-				this.countdown-=1;
-				if(this.countdown === 0) {
-					core.utils.adjustAspectRatio();
-					core.utils.alignScreenLayers();
-					$("#core_resize_overlay").hide(100);
+
+			setTimeout(() => {
+				this.countdown -= 1;
+				if (this.countdown === 0) {
+					this.utils.adjustAspectRatio();
+					this.utils.alignScreenLayers();
+					document.getElementById(
+						'core_resize_overlay'
+					).style.display = 'none';
 				}
 			}, 1000);
-		})
+		});
 	}
-	
+
 	/**
 	 * @return {Array} returns all loaded modules
 	 */
@@ -61,8 +74,11 @@ class Core {
 		return this.modules;
 	}
 
+	/**
+	 * @return {Module} return module by identifier
+	 */
 	getModule(identifier) {
-		return this.module[identifier];
+		return this.modules[identifier];
 	}
 
 	/**
@@ -70,27 +86,35 @@ class Core {
 	 * @param {type} WidgetType (ref:)
 	 */
 	getAllModulesOfType(type) {
-		let result = [];
+		let result__ = [];
 
 		for (let module in this.modules) {
 			if (this.modules[module].type === type) {
-				result.push(this.modules[module]);
+				result__.push(this.modules[module]);
 			}
 		}
 
-		return result;
+		return result__;
 	}
 
+	/**
+	 * @return {Array} returns all modules of in a specifc category
+	 * @param {String} category (ref:)
+	 */
 	getAllModulesInCategory(category) {
-		let result = []
-		
+		let result__ = [];
+
 		for (let module in this.modules) {
-			if(this.modules[module].category === category) {
-				result.push(this.modules[module]);
+			if (this.modules[module].category === category) {
+				result__.push(this.modules[module]);
 			}
 		}
 
-		return result;
+		return result__;
+	}
+
+	getCoreAsset(asset) {
+		return styles[asset];
 	}
 
 	/**
@@ -101,7 +125,7 @@ class Core {
 	}
 
 	/**
-	 * Method used to set which widget is the current active widget.
+	 * Method used to set the current active widget.
 	 * @ignore
 	 * @param {*} widgetObject
 	 */
@@ -110,29 +134,151 @@ class Core {
 	}
 
 	/**
-	 * @param {String} identifier 
+	 * Method used to start a widget.
+	 * @param {String} widget identifier
 	 */
 	startWidget(identifier) {
-		if (identifier === "quit") {
-			
-			if(core.utils.isPhone()) {
-				navigator.app.exitApp();
-			} 
+		this.setActiveWidget(this.modules[identifier]);
+		this.modules[identifier].start();
+	}
 
-			console.info("Cannot close app in browser-mode");
-		}
-		else {
-			this.modules[identifier].start();
+	setupEnvironment() {
+		this.backend.downloadModule("/files/checheza.main.treehouse.zip")
+		.then(() => {
+			this.startMainWidget();
+		})
+	}
+
+	startMainWidget() {
+		let mainWidgets = this.getAllModulesOfType('main');
+
+		if (mainWidgets.length > 1) {
+			this.log('Multiple main addons. Cannot start...');
+		} else if (mainWidgets.length === 0) {
+			this.setupEnvironment();
+			
+		} else if (mainWidgets.length === 1) {
+			this.startWidget(mainWidgets[0].identifier);
 		}
 	}
 
+	importModule(module) {
+		this.modules[module.identifier] = module;
+	}
+
 	refreshModules() {
-		this.filesystem.readFolder("modules")
-		.then(modules => {
-			modules.forEach(module => {
-				console.log(module);
-			});
-		})
+		return new Promise((resolve, reject) => {
+			this.filesystem
+				.readFolder('modules')
+				.then(modulesFolder => {
+					if( modulesFolder === false ) {
+						this.filesystem.createSystemDirectories()
+						.then(() => {
+							return this.refreshModules();
+						});
+					} else {
+						return modulesFolder.files; // read modules folder
+					}    
+				})
+				.then((modules) => {
+
+					if(modules === undefined) {
+						return this.refreshModules();
+					}
+
+					return Promise.all(
+						modules.map((folder) => {
+							return this.filesystem
+								.readFolder('modules/' + folder)
+								.then((data) => {
+									return data.files
+										.map((file) => {
+											if (file === 'module.js')
+												return `modules/${folder}/${file}`; // return source file path
+										})
+										.filter((item) => item !== undefined);
+								});
+						})
+					);
+				})
+				.then((moduleSource) => {
+					if(moduleSource === undefined)
+						return this.refreshModules();
+
+					return Promise.all(
+						moduleSource.flat().map((source) => {
+							return new Promise((res, rej) => {
+								let timeout = setTimeout(() => {
+									rej();
+								}, 5000);
+
+								document.head.addEventListener(
+									'DOMSubtreeModified',
+									() => {
+										clearTimeout(timeout);
+
+										timeout = setTimeout(() => {
+											res();
+										}, 1000);
+									}
+								);
+
+								if (
+									source !== undefined &&
+									source.includes('module.js')
+								) {
+									this.filesystem
+										.getUri(source)
+										.then((file) => {
+											let script = document.createElement(
+												'script'
+											);
+											script.setAttribute(
+												'type',
+												'text/javascript'
+											);
+											script.setAttribute(
+												'src',
+												file.uri
+											);
+											document
+												.getElementsByTagName('head')[0]
+												.appendChild(script); // append module source code
+										});
+								}
+							});
+						})
+					);
+				})
+				.then(() => {
+					this.initializeResizeListener();
+					this.utils.adjustAspectRatio();
+					this.utils.alignScreenLayers();
+					this.analytics.initialize();
+					
+					setTimeout(() => {
+						resolve();
+					}, 1000);
+				});
+		});
+	}
+
+	goBack() {
+		if (this.domainHistory.length > 1) {
+			let prevDomain = this.domainHistory[this.domainHistory.length - 2];
+
+			this.domainHistory.pop();
+
+			this.getActiveWidget().openDomain(
+				prevDomain.name,
+				prevDomain.payload
+			);
+
+			this.domainHistory.pop();
+			
+		} else {
+			this.log('history is empty');
+		}
 	}
 }
 

@@ -1,5 +1,7 @@
 import Core from './core';
 import styles from '../assets/core.css';
+import { Plugins, AppState } from '@capacitor/core';
+const { App } = Plugins;
 
 export default class CoreUtils {
 	/**
@@ -50,6 +52,7 @@ export default class CoreUtils {
 			if (Core.getActiveWidget().type !== 'main') {
 				Core.startMainWidget();
 			} else {
+				App.exitApp();
 				window.close();
 			}
 		};

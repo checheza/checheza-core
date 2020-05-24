@@ -120,17 +120,15 @@ export default class CoreFilesystem {
 						if(i === 0) {
 							this.makeDirectory(prefix + file.name.split("/")[0])
 							.then(() => { 
-								if(Object.keys(contents.files).length-1 === i) {
-									file.async('uint8array')
-									.then((data) =>
-										this.writeFile(prefix + filename, data)
-										.then(() => {
-											if(Object.keys(contents.files).length-1 === i) {
-												resolve(true);
-											}
-										})
-									);
-								}
+								file.async('uint8array')
+								.then((data) =>
+									this.writeFile(prefix + filename, data)
+									.then(() => {
+										if(Object.keys(contents.files).length-1 === i) {
+											resolve(true);
+										}
+									})
+								);
 							});
 						} else {
 							file.async('uint8array')

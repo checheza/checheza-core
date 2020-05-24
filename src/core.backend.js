@@ -84,10 +84,18 @@ export default class CoreBackend {
         url = url.replace('https://data.checheza.com','');
         return this.GET(url, true)
         .then(file => {
-            return Core.filesystem.unzipFile(file);
+            return Core.filesystem.unzipFile(file, false);
         }).then(() => {
             return Core.refreshModules();
         })
+    }
+
+    downloadBook(url) {
+        url = url.replace('https://data.checheza.com','');
+        return this.GET(url, true)
+        .then(file => {
+            return Core.filesystem.unzipFile(file, true);
+        });
     }
 
     POST(resource, data, asBlob) {

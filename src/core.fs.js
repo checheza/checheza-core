@@ -88,10 +88,17 @@ export default class CoreFilesystem {
 			});
 
 			await Filesystem.mkdir({
+				path: 'checheza/books',
+				directory: FilesystemDirectory.Documents,
+				recursive: true,
+			});
+
+			await Filesystem.mkdir({
 				path: 'checheza/modules',
 				directory: FilesystemDirectory.Documents,
 				recursive: true,
 			});
+
 
 			return true;
 		} catch (error) {
@@ -99,19 +106,24 @@ export default class CoreFilesystem {
 		}
 	}
 
-	async unzipFile(data) {
+	async unzipFile(data, book) {
+		let prefix = '/modules/';
+
+		if(book)
+			prefix = '/books/';
+
 		return new Promise(resolve => { 
 			JSZip.loadAsync(data).then((contents) => {
 				Object.keys(contents.files).forEach((filename, i) => {
 					let file = contents.file(filename);
 					if (file) {
 						if(i === 0) {
-							this.makeDirectory('/modules/' + file.name.split("/")[0])
+							this.makeDirectory(prefix + file.name.split("/")[0])
 							.then(() => { 
 								if(Object.keys(contents.files).length-1 === i) {
 									file.async('uint8array')
 									.then((data) =>
-										this.writeFile('/modules/' + filename, data)
+										this.writeFile(prefix + filename, data)
 										.then(() => {
 											if(Object.keys(contents.files).length-1 === i) {
 												resolve(true);
@@ -123,7 +135,7 @@ export default class CoreFilesystem {
 						} else {
 							file.async('uint8array')
 							.then((data) =>
-								this.writeFile('/modules/' + filename, data)
+								this.writeFile(prefix + filename, data)
 								.then(() => {
 									if(Object.keys(contents.files).length-1 === i) {
 										resolve(true);
@@ -131,10 +143,8 @@ export default class CoreFilesystem {
 								})
 							);
 						}
-
-						
 					} else {
-						this.makeDirectory('/modules/' + filename)
+						this.makeDirectory(prefix + filename)
 						.then(() => { 
 							if(Object.keys(contents.files).length-1 === i) {
 								resolve(true);

@@ -143,7 +143,7 @@ class Core {
 	}
 
 	setupEnvironment() {
-		this.backend.downloadModule("/files/checheza.main.treehouse.zip")
+		this.backend.downloadModule("checheza-main-treehouse")
 		.then(() => {
 			this.startMainWidget();
 		})

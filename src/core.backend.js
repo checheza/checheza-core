@@ -80,9 +80,8 @@ export default class CoreBackend {
         })
     }
     
-    downloadModule(url) {
-        url = url.replace('https://data.checheza.com','');
-        return this.GET(url, true)
+    downloadModule(mod) {
+        return this.GET('https://github.com/checheza/' + mod + '/archive/stable.zip', true)
         .then(file => {
             return Core.filesystem.unzipFile(file, false);
         }).then(() => {

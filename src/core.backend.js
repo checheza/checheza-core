@@ -81,7 +81,9 @@ export default class CoreBackend {
     }
     
     downloadModule(mod) {
-        return this.GET('https://github.com/checheza/' + mod + '/archive/stable.zip', true)
+        // return this.GET('https://github.com/checheza/' + mod + '/archive/stable.zip', true)
+        mod = mod.replace('https://data.checheza.com','');
+        return this.GET(mod, true)
         .then(file => {
             return Core.filesystem.unzipFile(file, false);
         }).then(() => {

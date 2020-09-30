@@ -22,7 +22,7 @@ export default class CoreFilesystem {
 				directory: FilesystemDirectory.Documents,
 			});
 		} catch (error) {
-			Core.log(`Could not read directory.\n\n${error}`);
+			console.error('***** COREFS: Could not read directory: ' + error, error);
 			return await false;
 		}
 	}
@@ -34,7 +34,7 @@ export default class CoreFilesystem {
 				directory: FilesystemDirectory.Documents,
 			});
 		} catch (error) {
-			console.error('Could not read file.', error);
+			console.error('***** COREFS: Could not read file: ' + error, error);
 		}
 	}
 
@@ -56,7 +56,7 @@ export default class CoreFilesystem {
 				recursive: true,
 			});
 		} catch (error) {
-			console.error('Could not write file.', error);
+			console.error('***** COREFS: Could not write file: ' + error, error);
 		}
 	}
 
@@ -67,43 +67,39 @@ export default class CoreFilesystem {
 		});
 	}
 
+	async makeChechezaDirectory() {
+		try {
+			Core.log('**** COREFS: Creating "checheza" directory');
+			return await Filesystem.mkdir({
+				path: 'checheza',
+				directory: FilesystemDirectory.Documents,
+				recursive: true,
+			});
+		} catch (error) {
+			console.error('***** COREFS: Could not create directory (checheza): ' + error, error);
+		}
+	}
+
 	async makeDirectory(path) {
 		try {
+			Core.log('**** COREFS: Creating "' + path + '" directory');
 			return await Filesystem.mkdir({
 				path: 'checheza/' + path,
 				directory: FilesystemDirectory.Documents,
 				recursive: true,
 			});
 		} catch (error) {
-			console.error('Could not create directory.', error);
+			console.error('***** COREFS: Could not create directory (' + path + '): ' + error, error);
 		}
 	}
 
 	async createSystemDirectories() {
-		try {
-			await Filesystem.mkdir({
-				path: 'checheza',
-				directory: FilesystemDirectory.Documents,
-				recursive: true,
-			});
-
-			await Filesystem.mkdir({
-				path: 'checheza/books',
-				directory: FilesystemDirectory.Documents,
-				recursive: true,
-			});
-
-			await Filesystem.mkdir({
-				path: 'checheza/modules',
-				directory: FilesystemDirectory.Documents,
-				recursive: true,
-			});
-
-
-			return true;
-		} catch (error) {
-			return false;
-		}
+		this.makeChechezaDirectory();
+		Core.log('**** COREFS: Done adding checheza directory');
+		this.makeDirectory('books');
+		Core.log('**** COREFS: Done adding books directory');
+		this.makeDirectory('modules');
+		Core.log('**** COREFS: Done adding modules directory');
 	}
 
 	async unzipFile(data, book) {

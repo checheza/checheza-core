@@ -86,9 +86,11 @@ class Core {
 	 * @param {type} WidgetType (ref:)
 	 */
 	getAllModulesOfType(type) {
+		this.log('***** getAllModulesOfType');
 		let result__ = [];
 
 		for (let module in this.modules) {
+			this.log('***** module: ' + module);
 			if (this.modules[module].type === type) {
 				result__.push(this.modules[module]);
 			}
@@ -130,6 +132,7 @@ class Core {
 	 * @param {*} widgetObject
 	 */
 	setActiveWidget(widgetObject) {
+		this.log('***** setActiveWidget');
 		this.activeWidget = widgetObject;
 	}
 
@@ -138,11 +141,13 @@ class Core {
 	 * @param {String} widget identifier
 	 */
 	startWidget(identifier) {
+		this.log('***** startWidget');
 		this.setActiveWidget(this.modules[identifier]);
 		this.modules[identifier].start();
 	}
 
 	setupEnvironment() {
+		this.log('***** setupEnvironment');
 		// this.backend.downloadModule("checheza-main-treehouse")
 		this.backend.downloadModule("/files/checheza.main.treehouse.zip")
 		.then(() => {
@@ -151,11 +156,14 @@ class Core {
 	}
 
 	startMainWidget() {
+		this.log('***** startMainWidget');
 		let mainWidgets = this.getAllModulesOfType('main');
+		// this.log('***** mainWidgets:' + JSON.stringify(mainWidgets));
 
 		if (mainWidgets.length > 1) {
 			this.log('Multiple main addons. Cannot start...');
 		} else if (mainWidgets.length === 0) {
+			this.log("***** Starting over; didn't find any 'main' modules yet.");
 			this.setupEnvironment();
 			
 		} else if (mainWidgets.length === 1) {
@@ -168,13 +176,17 @@ class Core {
 	}
 
 	refreshModules() {
+		this.log('***** refreshModules');
 		return new Promise((resolve, reject) => {
 			this.filesystem
 				.readFolder('modules')
 				.then(modulesFolder => {
+					// this.log('***** modulesFolder: ' + JSON.stringify(modulesFolder));
 					if( modulesFolder === false ) {
+						this.log('***** Creating System Directories');
 						this.filesystem.createSystemDirectories()
 						.then(() => {
+							this.log('***** Done Creating System Directories; time to refresh modules');
 							return this.refreshModules();
 						});
 					} else {
@@ -182,16 +194,19 @@ class Core {
 					}    
 				})
 				.then((modules) => {
-
+					// this.log('***** then modules: ' + JSON.stringify(modules));
 					if(modules === undefined) {
+						this.log('***** need to refreshModules() again');
 						return this.refreshModules();
 					}
 
 					return Promise.all(
 						modules.map((folder) => {
+							this.log('***** mapping module ('+folder+')');
 							return this.filesystem
 								.readFolder('modules/' + folder)
 								.then((data) => {
+									// this.log('***** reading folder (modules/'+ folder +'): ' + JSON.stringify(data));
 									return data.files
 										.map((file) => {
 											if (file === 'module.js')

@@ -20,6 +20,7 @@ export default class CoreBackend {
 
     request(method, resource, data) {
         return new Promise((resolve, reject) => { 
+            Core.log("Fetching "+ this.address + resource);
             fetch(this.address + resource, {
                 method: method,
                 mode: 'cors',
@@ -81,8 +82,10 @@ export default class CoreBackend {
     }
     
     downloadModule(mod) {
+        Core.log('***** downloadModule ( ' + mod + ' )');
         // return this.GET('https://github.com/checheza/' + mod + '/archive/stable.zip', true)
         mod = mod.replace('https://data.checheza.com','');
+        Core.log('***** GET\'ing ' + mod);
         return this.GET(mod, true)
         .then(file => {
             return Core.filesystem.unzipFile(file, false);

@@ -80,25 +80,72 @@ export default class CoreBackend {
             return response.available;
         })
     }
+
+    showModal() {
+        var modal = document.getElementById("downloadingModal");
+        var span = document.getElementsByClassName("close-modal")[0];
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+            modal.style.display = "none";
+            }
+        }
+        modal.style.display = "block";
+    }
+
+    hideModal() {
+        var modal = document.getElementById("downloadingModal");
+        modal.style.display = "none";
+    }
     
     downloadModule(mod) {
         Core.log('***** downloadModule ( ' + mod + ' )');
         // return this.GET('https://github.com/checheza/' + mod + '/archive/stable.zip', true)
         mod = mod.replace('https://data.checheza.com','');
+        if (!mod.includes("main.treehouse")) {
+            this.showModal();
+        }
         Core.log('***** GET\'ing ' + mod);
         return this.GET(mod, true)
         .then(file => {
+            // change modal content to "checkmark"
             return Core.filesystem.unzipFile(file, false);
         }).then(() => {
-            return Core.refreshModules();
+            if (!mod.includes("main.treehouse")) {
+                Core.log('***** Done Downloading module');
+                Core.refreshModules()
+                .then(() => {
+                    this.hideModal();
+                    Core.goBack();
+                    Core.log('***** Closed downloading modal and went back');
+                    setTimeout(() => {
+                        Core.goBack();
+                        Core.log('***** went back again');
+                    }, 200);
+                });
+            }else {
+                Core.log('***** Done Downloading Treehouse');
+                return Core.refreshModules();
+            }
         })
     }
 
     downloadBook(url) {
         url = url.replace('https://data.checheza.com','');
+        this.showModal();
         return this.GET(url, true)
         .then(file => {
             return Core.filesystem.unzipFile(file, true);
+        }).then(() => {
+            this.hideModal();
+            Core.goBack();
+            setTimeout(() => {
+                Core.goBack();
+            }, 200);
         });
     }
 

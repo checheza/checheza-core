@@ -15,6 +15,8 @@ class Core {
 		this.modules = [];
 		this.domainHistory = [];
 
+		this.modules_updates = {};
+
 		// This is the currently active widget module.
 		this.activeWidget = null;
 
@@ -165,7 +167,7 @@ class Core {
 		} else if (mainWidgets.length === 0) {
 			this.log("***** Starting over; didn't find any 'main' modules yet.");
 			this.setupEnvironment();
-			
+
 		} else if (mainWidgets.length === 1) {
 			this.startWidget(mainWidgets[0].identifier);
 		}
@@ -173,6 +175,37 @@ class Core {
 
 	importModule(module) {
 		this.modules[module.identifier] = module;
+	}
+
+	moduleNeedsUpdate(){
+		const semver = require('semver');
+		for (let module_id in this.modules) {
+			console.log(module_id);
+			module = this.modules[module_id];
+			if (module.version.split(".").length < 3) {
+				module.version = module.version + ".0";
+			}
+
+			if (__cfg.modules[module.identifier] && semver.diff(module.version, __cfg.modules[module.identifier]) ) {
+				this.modules_updates[module.identifier] = __cfg.modules[module.identifier];
+			}
+		}
+	}
+
+	moduleUpdate(){
+		let promises = [];
+		if (__cfg.modules){
+			this.moduleNeedsUpdate();
+			for (var module in this.modules_updates){
+				console.log("***** Updating module: " + module)
+				let module_checked = module;
+				if (module.includes("widget.treehouse")){
+					module_checked = module.replace("widget", "main");
+				}
+				promises.push(this.backend.downloadModule("/" + module_checked + "-" + this.modules_updates[module] + ".zip"))
+			}
+		}
+		return Promise.all(promises);
 	}
 
 	refreshModules() {
@@ -191,7 +224,7 @@ class Core {
 						});
 					} else {
 						return modulesFolder.files; // read modules folder
-					}    
+					}
 				})
 				.then((modules) => {
 					// this.log('***** then modules: ' + JSON.stringify(modules));
@@ -238,7 +271,6 @@ class Core {
 										}, 1000);
 									}
 								);
-
 								if (
 									source !== undefined &&
 									source.includes('module.js')
@@ -271,7 +303,7 @@ class Core {
 					this.utils.adjustAspectRatio();
 					this.utils.alignScreenLayers();
 					this.analytics.initialize();
-					
+
 					setTimeout(() => {
 						resolve();
 					}, 1000);
@@ -291,7 +323,7 @@ class Core {
 			);
 
 			this.domainHistory.pop();
-			
+
 		} else {
 			this.log('history is empty');
 		}

@@ -50,6 +50,21 @@ export default class CoreUtils {
 
 		coreExitButton.onclick = () => {
 			if (Core.getActiveWidget().type !== 'main') {
+				console.log("EXIT BUTTON CALLED");
+				
+				var noofTimeOuts = setTimeout(function() {}, 0);
+				console.log("NOOFTIMEOUTS: "+noofTimeOuts);
+				for (var t = 0 ; t < noofTimeOuts ; t++) {
+					console.log("Clearing timeout "+t);
+					clearTimeout(t);
+				}
+				for (var v = 0 ; v < noofTimeOuts ; v++) {
+					console.log("Clearing interval "+v);
+					clearInterval(v);
+				}
+				Core.audio.stopAll();
+				Core.audio.unloadAll();
+				
 				Core.startMainWidget();
 			} else {
 				App.exitApp();

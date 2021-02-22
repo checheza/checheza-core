@@ -160,7 +160,9 @@ export default class CoreFilesystem {
 			if(Core.utils.isPhone()) {
 				uri.uri = window.Ionic.WebView.convertFileSrc(uri.uri);
 			}
-			
+			uri.uri = uri.uri.replace('//books', '/books');
+			uri.uri = uri.uri.replace('//modules', '/modules');
+			// uri.uri = uri.uri.replace('http://localhost/_capacitor_file_/', 'file://');
 			return uri;
 			
 		} catch (error) {
